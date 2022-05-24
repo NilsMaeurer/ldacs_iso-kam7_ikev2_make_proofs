@@ -21,7 +21,7 @@ functions: kdf/2, hmac/2
 // LDACS ISO/IEC 11770-3:2021 key agreement mechanism 7 based 3-pass MAKE protocol //
 4. GS -> AS: Pgs, Ngs
 5. AS -> GS: 'algo', Pas, Nas, sign(<Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas>,ltkAS), h(Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas)
-6. GS -> AS: (pkGS, OCSP_pkGS), senc(<Kcc, Kbc, Kvoice, KDStesla, KsetMAC>, Kek), sign(<Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset>,ltkGS), h(Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset)
+6. GS -> AS: (pkGS, OCSP_pkGS), senc(<Kcc, Kbc, Kvoice, KDStesla, KsetMAC>, Kek), sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>,ltkGS), h(Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset)
 */
 
 /////////////////////////////////////
@@ -207,8 +207,8 @@ rule GS_3:
 		Kek = kdf(z,'k') // derive Key Encryption Key (KEK) for secure transmission of Kset
 		
         check_mAS = hmac(<Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas>, Km) // compute MAC to check for AS MAC validity
-        mGS = hmac(<Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)       // generate GS MAC - first GS then AS identifier
-		sGS = sign(<Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, ltkGS) // generate GS signature
+        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)       // generate GS MAC - first GS then AS identifier
+		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, ltkGS) // generate GS signature
 		
 		KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
     in
@@ -234,7 +234,7 @@ rule GS_3:
 
 // case a): AS has CertGS
 rule AS_4:
-    let check_mGS = hmac(<Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)
+    let check_mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)
 		check_KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD validity check
     in
     [
@@ -243,7 +243,7 @@ rule AS_4:
         , In(<senc(<Kset, KsetMAC>, Kek), sGS, mGS>)
     ]
     --[ 
-        Eq(verify(sGS, <Pgs, Pas, UAas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, pkGS), true) // verify GS signature with prestored pkGS
+        Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, pkGS), true) // verify GS signature with prestored pkGS
         , Eq(mGS, check_mGS)            // check GS MAC for validity - consistency
 		, Eq(check_KsetMAC, KsetMAC)    // check Kset MAC for validity
 		, Commit(UAas, UAgs, sid, <Pas, Pgs>) // Executability
