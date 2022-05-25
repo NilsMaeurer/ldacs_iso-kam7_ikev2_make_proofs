@@ -400,6 +400,22 @@ lemma secrecy_GS:
  * -> if he was compromised *later* all older secrets still remain secret
 */
 
+lemma secrecy_PFS_AS_2:
+    "All x #i.
+        Secret(x)@i & Role('AS')@i ==> 
+            not (Ex #j. K(x)@j)
+            | (Ex #u. Leaked(x)@u)
+            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
+            | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
+
+lemma secrecy_PFS:
+    "All x #i.
+        Secret(x)@i ==> 
+            not (Ex #j. K(x)@j)
+            | (Ex #u. Leaked(x)@u)
+            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
+            | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
+/*
 lemma secrecy_PFS_AS:
     exists-trace
     "not All x #i.
@@ -409,6 +425,8 @@ lemma secrecy_PFS_AS:
             | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
             | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
 
+
+
 lemma secrecy_PFS_GS:
     "All x #i.
         Secret(x)@i & Role('GS')@i ==> 
@@ -416,8 +434,7 @@ lemma secrecy_PFS_GS:
             | (Ex #u. Leaked(x)@u)
             | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
             | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
-
-
+*/
 /*
  * consistency lemma
  *

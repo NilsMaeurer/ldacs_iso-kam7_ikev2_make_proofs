@@ -407,7 +407,7 @@ lemma secrecy_GS:
  * -> if he was compromised *later* all older secrets still remain secret
 */
 
-lemma secrecy_PFS:
+lemma secrecy_PFS_AS:
     exists-trace
     "not All x #i.
         Secret(x)@i & Role('AS')@i ==> 
@@ -416,7 +416,7 @@ lemma secrecy_PFS:
             | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
             | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i & r < i)"
 
-lemma secrecy_PFS:
+lemma secrecy_PFS_GS:
     "All x #i.
         Secret(x)@i & Role('GS')@i ==> 
             not (Ex #j. K(x)@j)

@@ -414,7 +414,7 @@ lemma secrecy_PFS_AS:
             not (Ex #j. K(x)@j)
             | (Ex #u. Leaked(x)@u)
             | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
-            | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
+            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i & r < i)"
 
 lemma secrecy_PFS_GS:
     "All x #i.
@@ -422,8 +422,7 @@ lemma secrecy_PFS_GS:
             not (Ex #j. K(x)@j)
             | (Ex #u. Leaked(x)@u)
             | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
-            | (Ex A #r. CorruptedDHk(A)@r & Honest(A)@i & r < i)"
-
+            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i & r < i)"
 /*
  * consistency lemma
  *
