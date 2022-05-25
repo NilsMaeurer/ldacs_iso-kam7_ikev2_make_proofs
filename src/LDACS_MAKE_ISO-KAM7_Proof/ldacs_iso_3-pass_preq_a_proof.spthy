@@ -14,7 +14,7 @@ functions: kdf/2, hmac/2
 
 /*:
 // Secure CellEntry procedure //
-1. GS -> AS: 'SIB': UASgs, SACgs
+1. GS -> AS: 'SIB': UAgs, SACgs
 2. AS -> GS: 'CellEntryRequest': UAas, SACgs, 'scgs'
 3. GS -> AS: 'CellEntryResponse': SACas, 'EPLDACS', 'CCLDACS'
 
