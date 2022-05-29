@@ -133,29 +133,22 @@ Verification time:
 
 - ldacs_iso_3-pass_preq_a_proof.spthy
   - /* All well-formedness checks were successful. */
-  - summary of summaries:
-
-  analyzed: ldacs_iso_3-pass_preq_a_proof.spthy
-
-  exists_session_a (exists-trace): verified (26 steps)
-  exists_two_sessions_a (exists-trace): verified (50 steps)
-  mutual_authentication_A (all-traces): verified (30 steps)
-  mutual_authentication_B (all-traces): verified (30 steps)
-  session_uniqueness_A (all-traces): verified (28 steps)
-  session_uniqueness_B (all-traces): verified (28 steps)
-  secrecy_AS (all-traces): verified (56 steps)
-  secrecy_GS (all-traces): verified (11 steps)
-  secrecy_PFS_AS_1 (exists-trace): verified (19 steps)
-  secrecy_PFS_GS_2 (all-traces): verified (11 steps)
-  key_consistency_A (all-traces): verified (74 steps)
-  key_consistency_B (all-traces): verified (74 steps)
+  - summary of summaries - analyzed: ldacs_iso_3-pass_preq_a_proof.spthy
+    - exists_session_a (exists-trace): verified (27 steps)
+    - exists_two_sessions_a (exists-trace): verified (52 steps)
+    - mutual_authentication_A (all-traces): verified (30 steps)
+    - mutual_authentication_B (all-traces): verified (30 steps)
+    - session_uniqueness_A (all-traces): verified (28 steps)
+    - session_uniqueness_B (all-traces): verified (28 steps)
+    - secrecy (all-traces): verified (53 steps)
+    - secrecy_pfs (all-traces): verified (53 steps)
+    - key_consistency_A (all-traces): verified (74 steps)
+    - key_consistency_B (all-traces): verified (74 steps)
 
 
 - ldacs_iso_3-pass_preq_b_proof.spthy
   - /* All well-formedness checks were successful. */
-  - summary of summaries:
-
-  analyzed: ldacs_iso_3-pass_preq_b_proof.spthy
+  - summary of summaries- analyzed: ldacs_iso_3-pass_preq_b_proof.spthy
 
   exists_session_b (exists-trace): verified (29 steps)
   exists_two_sessions_b (exists-trace): verified (63 steps)

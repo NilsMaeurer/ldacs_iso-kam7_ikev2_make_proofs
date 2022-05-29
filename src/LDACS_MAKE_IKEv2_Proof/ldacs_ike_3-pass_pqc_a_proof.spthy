@@ -79,7 +79,7 @@ rule init_AS:
         Fr(~sid) //AS session id
         , !Ltk(UAas, ltkAS) //get AS private key and bind UAas to ltkAS
     ]
-    --[ Create(UAas, ~sid), Role('AS') ]->
+    --[ Create(UAas, ~sid) ]->
     [
         S_AS_0(UAas, ~sid, ltkAS) 
     ]
@@ -92,7 +92,7 @@ rule init_GS:
         , Fr(~Kset)          // generate new key set consisting of BC, CC, voice key and TESLA Key Disclosure Schedule (KDS) - for Tamarin purposes, one variable representing all four keys suffices
         , !Ltk(UAgs, ltkGS) //get GS private key and bind UAgs to ltkGS
     ]
-    --[ Create(UAgs, ~sid), Role('GS') ]->
+    --[ Create(UAgs, ~sid) ]->
     [ 	
         S_GS_0(UAgs, ~SACgs, ~sid, ~Kset, ltkGS)
 		, Out(<'SIB', UAgs, ~SACgs>)
@@ -109,7 +109,6 @@ rule AS_1:
     --[ 
 		ASHasGSCert(UAas, UAgs, sid)
 		, Neq(UAas, UAgs) // make sure AS and GS do not have same UA
-        , Role('AS')
 	]->
     [
         S_AS_1(UAas, UAgs, SACgs, sid, ltkAS)
@@ -125,7 +124,6 @@ rule GS_1:
     --[
 		Neq(UAas, UAgs) // make sure AS and GS do not have same UA
 		, Neq(~SACas, SACgs) // make sure AS and GS do not have same SAC
-        , Role('GS')
 	]->
     [
         S_GS_1(UAgs, SACgs, sid, Kset, ltkGS, UAas, ~SACas)
@@ -139,8 +137,7 @@ rule AS_2:
         , In(<'CellEntryResponse', SACas, 'EPLDACS', 'CCLDACS'>)        
     ]
     --[
-		Neq(SACas, SACgs) // make sure AS and GS do not have same SAC
-        , Role('AS')
+		Neq(SACas, SACgs) // make sure AS and GS do not have same SAC 
 	]-> 
     [ 
         S_AS_2(UAas, UAgs, SACgs, sid, ltkAS, SACas)
@@ -158,7 +155,6 @@ rule GS_2:
     ]     
     --[
         Running(UAgs, UAas, sid, Pgs)
-        , Role('GS')
     ]->
     [ 
         S_GS_2(UAgs, SACgs, sid, Kset, ltkGS, UAas, SACas, Pgs, ~x, ~Ngs)
@@ -187,7 +183,6 @@ rule AS_3:
     --[ 
 		Running(UAas, UAgs, sid, Pas)
 		, Neq(~Nas, Ngs) // make sure nonces are not equal
-        , Role('AS')
     ]->
     [ 
 		S_AS_3(UAas, UAgs, SACgs, sid, ltkAS, SACas, Ngs, Pgs, ~y, ~Nas, Pas, Kag, Km, Kdc, Kek) 
@@ -222,7 +217,6 @@ rule GS_3:
 		, Confirm(UAgs, UAas, sid, Kdc)                 // DC key consistency between UAas, UAgs in session sid
 		, Confirm(UAgs, UAas, sid, Kset)                // key set consistency between UAas, UAgs in session sid
         , Honest(UAgs), Honest(UAas)
-        , Role('GS')
     ]->
     [	S_GS_3(UAgs, SACgs, sid, Kset, ltkGS, UAas, SACas, Ngs, Pgs, x, Pas, Nas)
 		, !Sessk(sid, Kag)
@@ -251,7 +245,6 @@ rule AS_4:
 		, Secret(Kdc)       // check for Kdc key secrecy
         , Secret(Kset)    // check for Kset key secrecy
 		, Honest(UAas), Honest(UAgs)
-        , Role('AS') 
     ]->
     [
         !Sessk(sid, Kag)
@@ -365,31 +358,16 @@ lemma session_uniqueness_B:
 
 
 /*
- * secrecy lemmas:
- *******************************************************************************************************************
- * 2022-05-17: issue PFS/secrecy_key_A - <x, y> not necessarily bound to <UAas, UAgs> pair,                        *
- * as X and X1 can register and get keys ltkX, ltkX.1 and use these for signing and as input for MAC funtion       *
- * However, this seems like two legitimate participants X, X1 can register their keys and use them to commence     *
- * communiations - as they should. However, The lack of clear distinction between UAas/UAgs and X/X1 is troubling. *
- * can mitigate this by evaluating the exists-trace for PFS_AS direction                                           *
- *******************************************************************************************************************
-*/
+ * secrecy lemma:
+ */
 
-lemma secrecy_AS:
+lemma secrecy:
     "All x #i.
-        Secret(x)@i & Role('AS')@i ==> 
+        Secret(x)@i ==> 
             not (Ex #j. K(x)@j)
             | (Ex #u. Leaked(x)@u)
-            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i)
-            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i)"
-
-lemma secrecy_GS:
-    "All x #i.
-        Secret(x)@i & Role('GS')@i ==> 
-            not (Ex #j. K(x)@j)
-            | (Ex #u. Leaked(x)@u)
-            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i)
-            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i)"
+            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i)
+            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i)"            
 
 /*
  * Perfect Forward Secrecy:
@@ -401,22 +379,13 @@ lemma secrecy_GS:
  * -> if he was compromised *later* all older secrets still remain secret
 */
 
-lemma secrecy_PFS_AS:
-    exists-trace
-    "not All x #i.
-        Secret(x)@i & Role('AS')@i ==> 
-            not (Ex #j. K(x)@j)
-            | (Ex #u. Leaked(x)@u)
-            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
-            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i & r < i)"
-
-lemma secrecy_PFS_GS:
+lemma secrecy_pfs:
     "All x #i.
-        Secret(x)@i & Role('GS')@i ==> 
+        Secret(x)@i ==>
             not (Ex #j. K(x)@j)
             | (Ex #u. Leaked(x)@u)
-            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)
-            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i & r < i)"
+            | (Ex A #r. CorruptedKEMk(A)@r & Honest(A)@i)
+            | (Ex A #r. CorruptedLtk(A)@r & Honest(A)@i & r < i)"
 
 /*
  * consistency lemma
