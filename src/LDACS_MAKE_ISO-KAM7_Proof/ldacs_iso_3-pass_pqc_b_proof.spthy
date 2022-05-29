@@ -201,14 +201,14 @@ rule GS_3:
 		Kek = kdf(z,'k') // derive Key Encryption Key (KEK) for secure transmission of Kset
 		
         check_mAS = hmac(<Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas>, Km) // compute MAC to check for AS MAC validity
-        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)       // generate GS MAC - first GS then AS identifier
-		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, ltkGS) // generate GS signature
+        KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
+        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, Km)       // generate GS MAC - first GS then AS identifier
+		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, ltkGS) // generate GS signature
 		
         // This part is done at OCSP server, where OCSP response is signed by CA
         // For modelling purposes, the GS does that here itself
 		SigCertGS = sign(<UAgs, pk(ltkGS)>, ltkCA) // sign pubKey and fresh components and its ID of GS
-
-		KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
+        
     in
     [ 
         S_GS_2(UAgs, SACgs, sid, Kset, ltkGS, UAas, SACas, Pgs, x, Ngs)
@@ -236,13 +236,13 @@ rule AS_4:
 		check_KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD validity check
     in
     [
-        S_AS_3(UAas, UAgs, SACgs, sid, ltkAS, SACas, Ngs, Pgs, y, Nas, Pas, Kag, Km, Kdc, Kek)
+        S_AS_3(UAas, UAgs, SACgs, sid, ltkAS, SACas, Ngs, Pgs, y, Nas, Pas, Kag, Km, Kdc, senc(<Kset, KsetMAC>, Kek))
 		, !PkCA(pkCA) // get CA pubKey
         , In(<pkGS, SigCertGS, senc(<Kset, KsetMAC>, Kek), sGS, mGS>)
     ]
     --[ 
         Eq(verify(SigCertGS, <UAgs, pkGS>, pkCA), true) // Verify CA confirms authenticity of pkGS
-        , Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, pkGS), true) // verify GS signature with prestored pkGS
+        , Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, pkGS), true) // verify GS signature with prestored pkGS
         , Eq(mGS, check_mGS)            // check GS MAC for validity - consistency
 		, Eq(check_KsetMAC, KsetMAC)    // check Kset MAC for validity
 		, Commit(UAas, UAgs, sid, <Pas, Pgs>) // Executability

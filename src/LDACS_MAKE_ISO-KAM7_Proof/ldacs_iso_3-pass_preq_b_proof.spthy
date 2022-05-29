@@ -199,16 +199,16 @@ rule GS_3:
         Km = kdf(z,'m')  // derive MAC MAKE protocol key (consitency or key confirmation)
 		Kdc = kdf(z,'d') // derive AS-GS DCCH protection key
 		Kek = kdf(z,'k') // derive Key Encryption Key (KEK) for secure transmission of Kset
-		
+
         check_mAS = hmac(<Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas>, Km) // compute MAC to check for AS MAC validity
-        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)       // generate GS MAC - first GS then AS identifier
-		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, ltkGS) // generate GS signature
+        KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
+        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, Km)       // generate GS MAC - first GS then AS identifier
+		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, ltkGS) // generate GS signature
 		
         // This part is done at OCSP server, where OCSP response is signed by CA
         // For modelling purposes, the GS does that here itself
 		SigCertGS = sign(<UAgs, pk(ltkGS)>, ltkCA) // sign pubKey and fresh components and its ID of GS
 
-		KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
     in
     [ 
         S_GS_2(UAgs, SACgs, sid, Kset, ltkGS, UAas, SACas, Pgs, x, Ngs)
@@ -232,7 +232,7 @@ rule GS_3:
 
 // case b): AS needs CertGS
 rule AS_4:
-    let check_mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)
+    let check_mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, Km)
 		check_KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD validity check
     in
     [
@@ -242,7 +242,7 @@ rule AS_4:
     ]
     --[ 
         Eq(verify(SigCertGS, <UAgs, pkGS>, pkCA), true) // Verify CA confirms authenticity of pkGS
-        , Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, pkGS), true) // verify GS signature with prestored pkGS
+        , Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, pkGS), true) // verify GS signature with prestored pkGS
         , Eq(mGS, check_mGS)            // check GS MAC for validity - consistency
 		, Eq(check_KsetMAC, KsetMAC)    // check Kset MAC for validity
 		, Commit(UAas, UAgs, sid, <Pas, Pgs>) // Executability
@@ -291,7 +291,7 @@ lemma exists_session_b:
 
 /* complete more than one full run of the protocol in a single instance
  * --> allows attacker to use pre-gained knowledge in previous run
- */
+ 
  
 lemma exists_two_sessions_b:
 	exists-trace
@@ -306,6 +306,7 @@ lemma exists_two_sessions_b:
 		    & i2 < j2 & j2 < k2 & k2 < l2 & l2 < m2 & m2 < n2 & n2 < o2
 		    & not (x=x2)
 		    & not (y=y2)"
+*/
 
 /*
  *   authentication lemmas

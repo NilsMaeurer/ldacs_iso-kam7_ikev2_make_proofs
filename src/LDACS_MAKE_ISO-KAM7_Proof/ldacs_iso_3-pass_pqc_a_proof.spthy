@@ -207,10 +207,10 @@ rule GS_3:
 		Kek = kdf(z,'k') // derive Key Encryption Key (KEK) for secure transmission of Kset
 		
         check_mAS = hmac(<Pas, Pgs, UAgs, SACgs, 'scgs', 'algo', Nas>, Km) // compute MAC to check for AS MAC validity
-        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)       // generate GS MAC - first GS then AS identifier
-		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, ltkGS) // generate GS signature
-		
 		KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD
+        mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, Km)       // generate GS MAC - first GS then AS identifier
+		sGS = sign(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, ltkGS) // generate GS signature
+		
     in
     [ 
         S_GS_2(UAgs, SACgs, sid, Kset, ltkGS, UAas, SACas, Pgs, x, Ngs)
@@ -234,7 +234,7 @@ rule GS_3:
 
 // case a): AS has CertGS
 rule AS_4:
-    let check_mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, Km)
+    let check_mGS = hmac(<Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, Km)
 		check_KsetMAC = hmac(<Kset>, Kek) // calculate MAC for Kset AEAD validity check
     in
     [
@@ -243,7 +243,7 @@ rule AS_4:
         , In(<senc(<Kset, KsetMAC>, Kek), sGS, mGS>)
     ]
     --[ 
-        Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, Kset>, pkGS), true) // verify GS signature with prestored pkGS
+        Eq(verify(sGS, <Pgs, Pas, UAas, SACas, 'EPLDACS', 'CCLDACS', Ngs, senc(<Kset, KsetMAC>, Kek)>, pkGS), true) // verify GS signature with prestored pkGS
         , Eq(mGS, check_mGS)            // check GS MAC for validity - consistency
 		, Eq(check_KsetMAC, KsetMAC)    // check Kset MAC for validity
 		, Commit(UAas, UAgs, sid, <Pas, Pgs>) // Executability
